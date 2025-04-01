@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
 const CustomerIOClient = require('./customerio');
 
 // Instantiate the client after dotenv has loaded the environment variables
@@ -8,6 +9,9 @@ const customerio = new CustomerIOClient();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Security Middleware
+app.use(helmet());
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -65,7 +69,8 @@ app.get('/preferences/:base64_customer_id/data', async (req, res) => {
     
     // Default to 500 for other errors
     res.status(500).json({ 
-      error: error.response?.data?.meta?.error || 'Error fetching preferences'
+      // Log detailed error server-side (already done by console.error above)
+      error: 'An unexpected error occurred while fetching preferences.' 
     });
   }
 });
@@ -92,12 +97,21 @@ app.post('/preferences/:base64_customer_id/data', async (req, res) => {
       throw new Error('Invalid ID (empty after decoding)');
     }
 
-    console.log(`Updating preferences for customer_id: ${customer_id}`);
-
-    // Basic validation for preferences payload
-    if (!preferences || !Array.isArray(preferences.topics)) {
+    // --- Enhanced Payload Validation ---
+    if (!preferences || 
+        !Array.isArray(preferences.topics) || 
+        !preferences.topics.every(
+            topic => typeof topic === 'object' && 
+                     topic !== null && 
+                     typeof topic.id === 'number' && 
+                     typeof topic.subscribed === 'boolean'
+        )
+       ) {
       throw new Error('Invalid preferences payload format');
     }
+    // --- End Enhanced Payload Validation ---
+
+    console.log(`Updating preferences for customer_id: ${customer_id}`);
 
     // Call Customer.io API to update preferences
     const result = await customerio.updateSubscriptionPreferences(customer_id, preferences);
@@ -108,9 +122,9 @@ app.post('/preferences/:base64_customer_id/data', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error updating preferences:", error.message);
+    console.error("Error updating preferences:", error); // Log the full error
     
-    // Handle specific errors
+    // Handle specific validation errors with 400
     if (error.message === 'Invalid base64 format' || 
         error.message === 'Invalid ID (empty after decoding)' ||
         error.message === 'Invalid preferences payload format') {
@@ -120,7 +134,8 @@ app.post('/preferences/:base64_customer_id/data', async (req, res) => {
     // Default to 500 for other errors (including Customer.io API errors)
     res.status(500).json({ 
       success: false,
-      error: error.message || 'Failed to update preferences' 
+      // Log detailed error server-side (already done by console.error above)
+      error: 'An unexpected error occurred while updating preferences.' 
     });
   }
 });

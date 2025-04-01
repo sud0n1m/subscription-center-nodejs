@@ -41,6 +41,11 @@ function showSuccessScreen() {
 
 // Fetch preferences from the backend
 async function fetchPreferences() {
+    // Set loading state
+    titleElement.textContent = 'Loading Preferences...';
+    subtitleElement.textContent = '';
+    topicsContainer.innerHTML = ''; // Clear previous topics if re-fetching
+
     try {
         const response = await fetch(`/preferences/${base64CustomerId}/data`);
         if (!response.ok) throw new Error('Failed to fetch preferences');
@@ -48,10 +53,11 @@ async function fetchPreferences() {
         const data = await response.json();
         currentPreferences = data;
         
-        // Update the UI with the fetched data
+        // Update the UI with the fetched data (will overwrite loading text)
         renderPreferences(data);
     } catch (error) {
         console.error('Error loading preferences:', error);
+        // Update UI to show error state (already done in catch block)
         titleElement.textContent = 'Error Loading Preferences';
         subtitleElement.textContent = 'Please try again later.';
         showToast('Error loading preferences', 'error');
@@ -71,16 +77,29 @@ function renderPreferences(data) {
     data.preferences.topics.forEach(topic => {
         const topicElement = document.createElement('div');
         topicElement.className = 'topic-item';
+        
+        const isChecked = topic.subscribed;
+        const labelId = `label-topic-${topic.id}`;
+        const inputId = `topic-${topic.id}`;
+
         topicElement.innerHTML = `
-            <label class="toggle-container">
-                <input type="checkbox" data-topic-id="${topic.id}" ${topic.subscribed ? 'checked' : ''}>
-                <span class="toggle-slider"></span>
+            <label class="toggle-container" id="${labelId}" aria-checked="${isChecked}">
+                <input type="checkbox" id="${inputId}" data-topic-id="${topic.id}" ${isChecked ? 'checked' : ''} aria-labelledby="${labelId}">
+                <span class="toggle-slider" aria-hidden="true"></span>
             </label>
             <div class="topic-content">
-                <h3 class="topic-name">${topic.name}</h3>
-                ${topic.description ? `<p class="topic-description">${topic.description}</p>` : ''}
+                <h3 class="topic-name" id="name-topic-${topic.id}">${topic.name}</h3>
+                ${topic.description ? `<p class="topic-description" id="desc-topic-${topic.id}">${topic.description}</p>` : ''}
             </div>
         `;
+
+        // Add event listener to update aria-checked on the label when input changes
+        const inputElement = topicElement.querySelector(`#${inputId}`);
+        const labelElement = topicElement.querySelector(`#${labelId}`);
+        inputElement.addEventListener('change', (event) => {
+            labelElement.setAttribute('aria-checked', event.target.checked);
+        });
+
         topicsContainer.appendChild(topicElement);
     });
 }
