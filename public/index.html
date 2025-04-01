@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preferences</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div id="preferences-container" class="container">
+        <div id="header">
+            <h1 id="title">Loading...</h1>
+            <p id="subtitle"></p>
+        </div>
+
+        <div class="preferences-container">
+            <div id="topics" class="topics-container">
+                <!-- Topics will be dynamically inserted here -->
+            </div>
+
+            <div class="button-container">
+                <button id="unsubscribeAllButton" class="button danger">Unsubscribe from All</button>
+                <div class="button-group">
+                    <button id="saveButton" class="button primary">Save Preferences</button>
+                    <button id="cancelButton" class="button secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-screen" class="container" style="display: none;">
+        <div class="success-content">
+            <h1>Preferences Updated</h1>
+            <p>Your email preferences have been saved successfully.</p>
+            <p class="note">You can close this window now.</p>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html> 
